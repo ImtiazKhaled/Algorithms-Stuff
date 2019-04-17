@@ -18,6 +18,7 @@ typedef struct hash_table   {
 }hash_table;
 
 
+
 //gets a line count for the given file
 int get_line_count(char *dictname)  {
     FILE *file = NULL;
