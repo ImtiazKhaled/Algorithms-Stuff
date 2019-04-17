@@ -80,9 +80,8 @@ int closest_prime(int lineCount) {
     return lineCount;
 }
 
+
 //required functions
-
-
 int search_word(hash_table * hashTable, char * word, int tableSize, int maxProbe, int *probeCounter, int print) {   
     
     int i; 
@@ -131,7 +130,6 @@ int search_word(hash_table * hashTable, char * word, int tableSize, int maxProbe
 
 
 void insert_word(hash_table * hashTable, char * word, char * inputDefinition, int tableSize, int maxProbe, int *probeCounter, int *hashCounter)    {
-    
     int secondOccurence = 0, index = hash_function(word, tableSize);
     while(hashTable[index].occupied == 1)    {    
         if(!strcmp(word, hashTable[index].word)) {
@@ -142,7 +140,6 @@ void insert_word(hash_table * hashTable, char * word, char * inputDefinition, in
         *probeCounter += 1;
         index = double_hash(index, tableSize);
     }
-    
     if(secondOccurence == 1) {
         char wordToCat[strlen(inputDefinition)+2];
         strcpy(wordToCat, "; "); 
@@ -152,7 +149,6 @@ void insert_word(hash_table * hashTable, char * word, char * inputDefinition, in
         *hashCounter += 1;
         return;
     }
-
     strcpy(hashTable[index].word, word);
     strcpy(hashTable[index].definition, inputDefinition); 
     hashTable[index].occupied = 1;
@@ -160,6 +156,7 @@ void insert_word(hash_table * hashTable, char * word, char * inputDefinition, in
     *hashCounter += 1;
     return;
 }
+
 
 void delete_word(hash_table * hashTable, char * word, int tableSize, int maxProbe, int *probeCounter)    {
     int index = search_word(hashTable, word, tableSize, maxProbe, probeCounter, 0);
@@ -182,6 +179,7 @@ void print_hash_table(hash_table * hashTable, int tableSize) {
         printf("%s\t%s\n", hashTable[i].word, hashTable[i].definition);  
 }
 
+
 int main(void)  {
     int i, lineCount, totalProbe = 0, maxProbe = 0, hashCounter = 0;
     double averageProbes = 0;
@@ -195,28 +193,29 @@ int main(void)  {
     int tableSize = closest_prime(1.3*lineCount); //gets the closest prime number to 1.3*lineCount
     hash_table * hashTable = malloc((tableSize)*sizeof(hash_table));    //dynamically allocate a blank hash table
     int * probeCounter = malloc((tableSize)*sizeof(int));    //array to store all the probeCounter values
-    
     for(i = 0; i < tableSize; i++)  {
-        hashTable[i].occupied = 0;
-        probeCounter[i] = 0;
+        hashTable[i].occupied = 0;  //set all elements in table to unoccupied
+        probeCounter[i] = 0;    //set all probe counters to zero
     }
-
     int unHashed = lineCount;
-
     for(i = 0; i < lineCount; i++)  {
         insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, maxProbe, probeCounter + i, &hashCounter);  //contructs a hashtable with the given data
         maxProbe = max(probeCounter[i], maxProbe); //gets the maximum number of probes needed to search for in the hash table
         totalProbe +=probeCounter[i];   //gets the total number of probes during the insertion
     }
-
-    averageProbes = (double)totalProbe/(double)lineCount; //gets the average number of probes for all operations
-    
-
-    printf("\nHash Table\n\taverage number of probes:\t\t%0.2f\n\tmax_run of probes:\t\t\t%d\n\ttotal PROBES (for %d items):\t\t%d\n\titem NOT hased (out of %d):\t\t0\n\n", averageProbes, maxProbe, lineCount, totalProbe, lineCount);
-    //print the format shown on run1
     free(dictionaryWords);  //deallocates memory used to store the dictionary words
-
+    averageProbes = (double)totalProbe/(double)lineCount; //gets the average number of probes for all operations
+    int * probeTable = malloc(maxProbe*sizeof(int)); //dynamically allocate to an array of probe counters
+    for(i = 0; i < lineCount; i++)   probeTable[probeCounter[i]] += 1;  //fill the dynamically allocated table with the probe counter values
+    printf("\nHash Table\n\taverage number of probes:\t\t%0.2f\n\tmax_run of probes:\t\t\t%d\n\ttotal PROBES (for %d items):\t\t%d\n\titem NOT hased (out of %d):\t\t0\n\n", averageProbes, maxProbe, lineCount, totalProbe, lineCount);
+    printf("Probes|Count of keys\n----------------------\n");
+    for(i = 1; i <= maxProbe; i++)   {   
+        if(probeTable[i] == 0)  continue;
+        else    printf("%6d|%6d\n----------------------\n",i, probeTable[i]);
+    }
+    //print the format shown on run1, except table is dynamically allocated
     //print_hash_table(hashTable, tableSize);
+
 
     int index = search_word(hashTable, "aback", tableSize, maxProbe, probeCounter, 1);
     index = search_word(hashTable, "horse", tableSize, maxProbe, probeCounter, 1);
@@ -231,34 +230,6 @@ int main(void)  {
     index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
     insert_word(hashTable, "cat", "gato", tableSize, maxProbe, &probeCounter[i], &unHashed);
     index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-
-
-    
-    
-    /* insert_word(hashTable, "cat", "henlo", tableSize, maxProbe, &probeCounter[i]);
-    insert_word(hashTable, "cat", "hooman", tableSize, maxProbe, &probeCounter[i]);
-    
-    
-    delete_word(hashTable, "cat", tableSize, maxProbe, probeCounter);
-    index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    delete_word(hashTable, "cat", tableSize, maxProbe, probeCounter);
-
-    
-    for(i = 0; i < tableSize; i++) printf("occupied: %d\tname: %s\tdefinition: %s\n", hashTable[i].occupied, hashTable[i].word, hashTable[i].definition);
-
-    int index = search_word(hashTable, dictionaryWords[2].word, tableSize, maxProbe, &probeCounter[2]);
-    printf("%d",probeCounter[2]);
- */
-    
-    /*
-    int hash = hash_function(dictionaryWords[3].word,tableSize);
-    printf("%d\n", hash);
-    hash = double_hash(hash,tableSize);
-    printf("%d\n", hash);
-    hash = double_hash(hash,tableSize);
-    printf("%d\n", hash);
-    hash = double_hash(hash,tableSize);
-    printf("%d\n", hash);*/    
     
     free(hashTable);
     free(probeCounter);
