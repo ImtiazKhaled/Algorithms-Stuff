@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define max(lhs, rhs)   (((lhs) < (rhs)) ? rhs : lhs)
-#define double_hash(prevHash, tableSize)    ((prevHash  * 2) % tableSize)
+#define double_hash(prevHash, tableSize)    (tableSize - (prevHash * 2) % tableSize)
 
 
 typedef struct dictionary   {
@@ -16,7 +16,6 @@ typedef struct hash_table   {
     char definition[1000];
     int occupied;
 }hash_table;
-
 
 
 //gets a line count for the given file
@@ -62,7 +61,7 @@ void read_file(char * dictname, dictionary * dictionaryWords, int count)   {
 int hash_function(char * word, int tableSize) {
     int i, hash = 0;
     for(i = 0; i < strlen(word); i++)   {
-        hash = (hash + ((int)word[i]*10))%tableSize;
+        hash = (hash + ((int)(word[i]*10)))%tableSize;
     }
     return hash;
 }
@@ -86,7 +85,6 @@ int closest_prime(int lineCount) {
 
 int search_word(hash_table * hashTable, char * word, int tableSize, int maxProbe, int *probeCounter, int print) {   
     
-    printf("got into search word");
     int i; 
     int index = hash_function(word, tableSize); 
     if(maxProbe == 0)   {
@@ -132,31 +130,34 @@ int search_word(hash_table * hashTable, char * word, int tableSize, int maxProbe
 }
 
 
-void insert_word(hash_table * hashTable, char * word, char * inputDefinition, int tableSize, int maxProbe, int *probeCounter)    {
-    int secondOccurence = 0;
-    int index = hash_function(word, tableSize);
+void insert_word(hash_table * hashTable, char * word, char * inputDefinition, int tableSize, int maxProbe, int *probeCounter, int *hashCounter)    {
+    
+    int secondOccurence = 0, index = hash_function(word, tableSize);
     while(hashTable[index].occupied == 1)    {    
         if(!strcmp(word, hashTable[index].word)) {
+            *probeCounter += 1;
             secondOccurence = 1;
             break;
         }
+        *probeCounter += 1;
         index = double_hash(index, tableSize);
     }
-
-    printf("got in to insert");
+    
     if(secondOccurence == 1) {
         char wordToCat[strlen(inputDefinition)+2];
         strcpy(wordToCat, "; "); 
         strcat(wordToCat, inputDefinition);;
         strcat(hashTable[index].definition, wordToCat); 
-        //probeCounter = 0;
-        secondOccurence = 0;
+        *probeCounter += 1;
+        *hashCounter += 1;
         return;
     }
 
     strcpy(hashTable[index].word, word);
     strcpy(hashTable[index].definition, inputDefinition); 
     hashTable[index].occupied = 1;
+    *probeCounter += 1;
+    *hashCounter += 1;
     return;
 }
 
@@ -177,11 +178,13 @@ void delete_word(hash_table * hashTable, char * word, int tableSize, int maxProb
 
 void print_hash_table(hash_table * hashTable, int tableSize) {
     int i;
-    for(i = 0; i < tableSize; i++) printf("%s\t%s\n", hashTable[i].word, hashTable[i].definition);  
+    for(i = 0; i < tableSize; i++) 
+        printf("%s\t%s\n", hashTable[i].word, hashTable[i].definition);  
 }
 
 int main(void)  {
-    int i, lineCount, totalProbe = 0, maxProbe = 0, counterProbe = 0;
+    int i, lineCount, totalProbe = 0, maxProbe = 0, hashCounter = 0;
+    double averageProbes = 0;
     char dictionaryName[50], choice;
     printf("Enter the filename with the dictionary data (include the extension e.g. Spanish.txt): ");   
     fgets(dictionaryName, 50, stdin);
@@ -189,40 +192,48 @@ int main(void)  {
     lineCount = get_line_count(dictionaryName); //gets the number of lines in the file 
     dictionary * dictionaryWords = malloc((lineCount)*sizeof(dictionary));  //dynamically allocate a blank dictionary to be filled out by "read_file"
     read_file(dictionaryName, dictionaryWords, lineCount); //reads in the dictionary from the file
-    int tableSize = closest_prime(lineCount); //gets the closest prime number to 1.3*lineCount
+    int tableSize = closest_prime(1.3*lineCount); //gets the closest prime number to 1.3*lineCount
     hash_table * hashTable = malloc((tableSize)*sizeof(hash_table));    //dynamically allocate a blank hash table
     int * probeCounter = malloc((tableSize)*sizeof(int));    //array to store all the probeCounter values
     
-    for(i = 0; i < tableSize; i++)  hashTable[i].occupied = 0;
+    for(i = 0; i < tableSize; i++)  {
+        hashTable[i].occupied = 0;
+        probeCounter[i] = 0;
+    }
+
+    int unHashed = lineCount;
 
     for(i = 0; i < lineCount; i++)  {
-        probeCounter[i] = 1;
-        //insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, maxProbe, probeCounter + i);
-        insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, maxProbe, probeCounter + i);
-    /*     printf("curr counter: %d\tmaxprobe: %d\n", probeCounter[i], maxProbe);   
+        insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, maxProbe, probeCounter + i, &hashCounter);  //contructs a hashtable with the given data
         maxProbe = max(probeCounter[i], maxProbe); //gets the maximum number of probes needed to search for in the hash table
-        probeCounter[i] = counterProbe;
-     */  
+        totalProbe +=probeCounter[i];   //gets the total number of probes during the insertion
     }
+
+    averageProbes = (double)totalProbe/(double)lineCount; //gets the average number of probes for all operations
     
-    print_hash_table(hashTable, tableSize);  
-    
-    printf("\ndone with table\n");
-    
+
+    printf("\nHash Table\n\taverage number of probes:\t\t%0.2f\n\tmax_run of probes:\t\t\t%d\n\ttotal PROBES (for %d items):\t\t%d\n\titem NOT hased (out of %d):\t\t0\n\n", averageProbes, maxProbe, lineCount, totalProbe, lineCount);
+    //print the format shown on run1
+    free(dictionaryWords);  //deallocates memory used to store the dictionary words
+
+    //print_hash_table(hashTable, tableSize);
+
     int index = search_word(hashTable, "aback", tableSize, maxProbe, probeCounter, 1);
-    /* index = search_word(hashTable, "horse", tableSize, maxProbe, probeCounter, 1);
+    index = search_word(hashTable, "horse", tableSize, maxProbe, probeCounter, 1);
     index = search_word(hashTable, "sun", tableSize, maxProbe, probeCounter, 1);
     index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
     delete_word(hashTable, "cat", tableSize, maxProbe, probeCounter);
     index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
     delete_word(hashTable, "cat", tableSize, maxProbe, probeCounter);
-    insert_word(hashTable, "cat", "*******", tableSize, maxProbe, &probeCounter[i]);
+    insert_word(hashTable, "cat", "*******", tableSize, maxProbe, &probeCounter[i], &unHashed);
     index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    insert_word(hashTable, "cat", "elgato", tableSize, maxProbe, &probeCounter[i]);
+    insert_word(hashTable, "cat", "elgato", tableSize, maxProbe, &probeCounter[i], &unHashed);
     index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    insert_word(hashTable, "cat", "gato", tableSize, maxProbe, &probeCounter[i]);
+    insert_word(hashTable, "cat", "gato", tableSize, maxProbe, &probeCounter[i], &unHashed);
     index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
- */
+
+
+    
     
     /* insert_word(hashTable, "cat", "henlo", tableSize, maxProbe, &probeCounter[i]);
     insert_word(hashTable, "cat", "hooman", tableSize, maxProbe, &probeCounter[i]);
@@ -249,7 +260,6 @@ int main(void)  {
     hash = double_hash(hash,tableSize);
     printf("%d\n", hash);*/    
     
-    free(dictionaryWords);
     free(hashTable);
     free(probeCounter);
     return 0;
