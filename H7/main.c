@@ -83,52 +83,35 @@ int closest_prime(int lineCount) {
 
 //required functions
 int search_word(hash_table * hashTable, char * word, int tableSize, int maxProbe, int *probeCounter, int print) {   
-    //printf("entering search word");
-    int i; 
+    int i = 0; 
     int index = hash_function(word, tableSize); 
     
     while(i <= maxProbe)   {
-     if(hashTable[index].occupied)   {
-        if(strcmp(word, hashTable[index].word) == 0)    {    
-            if(print == 1)    printf("Quert: %s\tTranslation: %s\n",hashTable[index].word ,hashTable[index].definition);
-            return index;
-        }
-        else    { 
-        index = double_hash(index, tableSize);  //double_hash defined as a macro
-        *probeCounter +=  1;
-        i++;
-        continue;
-        }                
-    }
-    else    continue;
-    *probeCounter +=  1;
-    i++;
-    }
-    /* else    {
-        while( i < 5)   {
-            if(hashTable[index].occupied)   {
-                if(strcmp(word, hashTable[index].word) == 0)    {    
-                    if(print == 1)    printf("Quert: %s\tTranslation: %s\n",hashTable[index].word ,hashTable[index].definition);
-                    return index;
-                }
-                else    { 
+        if(hashTable[index].occupied)   {
+            if(strcmp(word, hashTable[index].word) == 0)    {
+                *probeCounter +=  1;    
+                if(print == 1)    printf("%d probes\n\tQuery: %s\n\tTranslation: %s\n",*probeCounter ,hashTable[index].word ,hashTable[index].definition);
+                return index;
+            }
+            else    { 
                 index = double_hash(index, tableSize);  //double_hash defined as a macro
-                *probeCounter = *probeCounter + 1;
+                *probeCounter +=  1;
                 i++;
                 continue;
-                }                
-            }
-            else    continue;
-            *probeCounter = *probeCounter + 1;
-            i++;
+            }                
         }
-    } */
+        else    {
+            *probeCounter +=  1;
+            i++;
+            continue;
+        }
+    }
     if(print == 1)  printf("NOT found\n");
     return -1;
 }
 
 
-void insert_word(hash_table * hashTable, char * word, char * inputDefinition, int tableSize, int maxProbe, int *probeCounter, int *hashCounter)    {
+void insert_word(hash_table * hashTable, char * word, char * inputDefinition, int tableSize, int *probeCounter, int *hashCounter)    {
     int secondOccurence = 0, index = hash_function(word, tableSize);
     while(hashTable[index].occupied == 1)    {    
         if(!strcmp(word, hashTable[index].word)) {
@@ -159,16 +142,6 @@ void insert_word(hash_table * hashTable, char * word, char * inputDefinition, in
 
 void delete_word(hash_table * hashTable, char * word, int tableSize, int maxProbe, int *probeCounter)    {
     int index = search_word(hashTable, word, tableSize, maxProbe, probeCounter, 0);
-    /* int index = hash_function(word, tableSize);
-    while(hashTable[index].occupied == 1)    {    
-        if(!strcmp(word, hashTable[index].word)) {
-            *probeCounter += 1;
-            secondOccurence = 1;
-            break;
-        }
-        *probeCounter += 1;
-        index = double_hash(index, tableSize);  //double hash defined as macro
-     }*/
     if(index == -1) {
         printf("Item not found => no deletion.\n");
         return;
@@ -190,9 +163,9 @@ void print_hash_table(hash_table * hashTable, int tableSize) {
 
 
 int main(void)  {
-    int i, lineCount, totalProbe = 0, maxProbe = 0, hashCounter = 0, stoploop = 1;
+    int i, index, lineCount, totalProbe = 0, maxProbe = 0, hashCounter = 0, stoploop = 1;
     double averageProbes = 0;
-    char dictionaryName[50], choice = {-1};
+    char dictionaryName[50], choice = {-1}, userInput[100], word[20], definition[50];
     printf("Enter the filename with the dictionary data (include the extension e.g. Spanish.txt): ");   
     fgets(dictionaryName, 50, stdin);
     dictionaryName[strlen(dictionaryName)-1] = '\0';
@@ -211,7 +184,7 @@ int main(void)  {
     int unHashed = lineCount;
     
     for(i = 0; i < lineCount; i++)  {
-        insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, maxProbe, probeCounter + i, &hashCounter);  //contructs a hashtable with the given data
+        insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, probeCounter + i, &hashCounter);  //contructs a hashtable with the given data
         maxProbe = max(probeCounter[i], maxProbe); //gets the maximum number of probes needed to search for in the hash table
         totalProbe +=probeCounter[i];   //gets the total number of probes during the insertion
     }
@@ -226,43 +199,39 @@ int main(void)  {
         if(probeTable[i] == 0)  continue;
         else    printf("%6d|%6d\n-------------------\n",i, probeTable[i]);
     }
-    //print the format shown on run1, except table is dynamically allocated
-    
-   /*  while(stoploop)    {
+    printf("Enter words to look-up. Enter q to stop.\n");
+    free(probeTable);
+    //print the format shown on run1, except table is dynamically allocated    
+    while(stoploop)    {
+        strcpy(definition, " ");
         printf("READ op:");
         scanf("%c",&choice);
+        getchar();
+        fgets(userInput, 99, stdin);
         switch(choice)  {
-            case 's':   scanf("")    break;
-            case 'd':   printf("d");    break;
-            case 'i':   printf("i");    break;
-            case 'q':   stoploop = 0; break;
+            case 's':   userInput[strlen(userInput)-1] = '\0';
+                        index = search_word(hashTable, userInput, tableSize, maxProbe, probeCounter, 1);
+                        break;  //searches for the userInput
+            case 'd':   userInput[strlen(userInput)-1] = '\0'; 
+                        delete_word(hashTable, userInput, tableSize, maxProbe, probeCounter);
+                        break;  //deletes the userInput
+            case 'i':   {
+                            printf("enter insertion");       
+                            //sscanf (userInput,"%s\t%[^\n]",word, definition);      
+                            printf("\n%s\t%s",word,definition); 
+                            insert_word(hashTable, word, definition, tableSize, probeCounter + i, &hashCounter);  //contructs a hashtable with the given data
+                            //strcpy(dictionaryWords[i].word, bufferWord);
+                            //printf("userInput insert: %s\n\n",userInput);
+                            //strcpy(definition, " ");
+                            break;
+                        }   //inserts the word and defition provided by the user
+            case 'q':   stoploop = 0; break;    //breaks the loop
+            default: printf("that is not a valid command try again.\n"); //default if user input is wrong
         }
     }
- */
     
-    //print_hash_table(hashTable, tableSize);
-/*     printf("\n%d\n",(int)"-1");
-
-    while(choice != '-1')   {
-        printf("\nhi\n");
-    }
- */
-   /*  int index = search_word(hashTable, "aback", tableSize, maxProbe, probeCounter + lineCount, 1);
-    index = search_word(hashTable, "horse", tableSize, maxProbe, probeCounter, 1);
-    index = search_word(hashTable, "sun", tableSize, maxProbe, probeCounter, 1);
-    index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    delete_word(hashTable, "cat", tableSize, maxProbe, probeCounter);
-    index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    delete_word(hashTable, "cat", tableSize, maxProbe, probeCounter);
-    insert_word(hashTable, "cat", "*******", tableSize, maxProbe, &probeCounter[i], &unHashed);
-    index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    insert_word(hashTable, "cat", "elgato", tableSize, maxProbe, &probeCounter[i], &unHashed);
-    index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    insert_word(hashTable, "cat", "gato", tableSize, maxProbe, &probeCounter[i], &unHashed);
-    index = search_word(hashTable, "cat", tableSize, maxProbe, probeCounter, 1);
-    */ 
     free(hashTable);
     free(probeCounter);
-    return 0;
+    return 0; 
 }
 
