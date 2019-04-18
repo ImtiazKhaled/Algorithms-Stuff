@@ -111,7 +111,7 @@ int search_word(hash_table * hashTable, char * word, int tableSize, int maxProbe
 }
 
 
-void insert_word(hash_table * hashTable, char * word, char * inputDefinition, int tableSize, int *probeCounter, int *hashCounter)    {
+void insert_word(hash_table * hashTable, char * word, char * inputDefinition, int tableSize, int *probeCounter, int *hashCounter, int print)    {
     int secondOccurence = 0, index = hash_function(word, tableSize);
     while(hashTable[index].occupied == 1)    {    
         if(!strcmp(word, hashTable[index].word)) {
@@ -129,7 +129,6 @@ void insert_word(hash_table * hashTable, char * word, char * inputDefinition, in
         strcat(hashTable[index].definition, wordToCat); 
         *probeCounter += 1;
         *hashCounter += 1;
-        printf(" Query: %s\n\t%d probes\n\tWill insert pair [%s, %s]\n",word, *probeCounter, word, inputDefinition);
         return;
     }
     strcpy(hashTable[index].word, word);
@@ -137,7 +136,6 @@ void insert_word(hash_table * hashTable, char * word, char * inputDefinition, in
     hashTable[index].occupied = 1;
     *probeCounter += 1;
     *hashCounter += 1;
-    printf(" Query: %s\n\t%d probes\n\tWill insert pair [%s, %s]\n",word, *probeCounter,word, inputDefinition);
     return;
 }
 
@@ -186,11 +184,10 @@ int main(void)  {
     int unHashed = lineCount;
     
     for(i = 0; i < lineCount; i++)  {
-        insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, probeCounter + i, &hashCounter);  //contructs a hashtable with the given data
+        insert_word(hashTable, dictionaryWords[i].word, dictionaryWords[i].definition, tableSize, probeCounter + i, &hashCounter, 0);  //contructs a hashtable with the given data
         maxProbe = max(probeCounter[i], maxProbe); //gets the maximum number of probes needed to search for in the hash table
         totalProbe +=probeCounter[i];   //gets the total number of probes during the insertion
     }
-    printf("\n value of i after loop %d\n",i);
 
     free(dictionaryWords);  //deallocates memory used to store the dictionary words
     averageProbes = (double)totalProbe/(double)lineCount; //gets the average number of probes for all operations
@@ -198,7 +195,12 @@ int main(void)  {
     for(i = 0; i < lineCount; i++)   probeTable[probeCounter[i]] += 1;  //fill the dynamically allocated table with the probe counter values
     printf("\nHash Table\n\taverage number of probes:\t\t%0.2f\n\tmax_run of probes:\t\t\t%d\n\ttotal PROBES (for %d items):\t\t%d\n\titem NOT hased (out of %d):\t\t0\n\n", averageProbes, maxProbe, lineCount, totalProbe, lineCount);
     printf("Probes|Count of keys\n-------------------\n");
-
+    for(i = 1; i <= maxProbe; i++)   {   
+        if(probeTable[i] == 0)  continue;
+        else    printf("%6d|%6d\n----------------------\n",i, probeTable[i]);
+    }
+    //print the format shown on run1, except table is dynamically allocated
+    
     i = lineCount - 1;
     totalProbe = 0;
     while(stoploop)    {    //enter loop for user input
@@ -217,7 +219,8 @@ int main(void)  {
                         delete_word(hashTable, userInput, tableSize, maxProbe, probeCounter + i);
                         break;  //deletes the userInput
             case 'i':   sscanf (userInput,"%s\t%[^\n]",word, definition);      
-                        insert_word(hashTable, word, definition, tableSize, probeCounter + i, &hashCounter);
+                        insert_word(hashTable, word, definition, tableSize, probeCounter + i, &hashCounter, 1);
+                        printf(" Query: %s\n\t%d probes\n\tWill insert pair [%s, %s]\n",word, probeCounter[i],word, definition);
                         break;   //inserts the word and defition provided by the user
             case 'q':   stoploop = 0; break;    //breaks the loop
             default: printf("that is not a valid command try again.\n"); //default if user input is wrong
@@ -226,8 +229,10 @@ int main(void)  {
     }
     averageProbes = (double)totalProbe/(double)(i - lineCount - 1); //calculates average number of probes for the user inputs
     printf("\nAverage probes per operation:\t%0.2f\n",averageProbes);
+    free(probeTable);
     free(hashTable);
     free(probeCounter);
     return 0; 
 }
+
 
