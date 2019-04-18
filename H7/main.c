@@ -179,8 +179,7 @@ int main(void)  {
         hashTable[i].occupied = 0;  //set all elements in table to unoccupied
         probeCounter[i] = 0;    //set all probe counters to zero
     }
-    
-    
+        
     int unHashed = lineCount;
     
     for(i = 0; i < lineCount; i++)  {
@@ -189,15 +188,13 @@ int main(void)  {
         totalProbe +=probeCounter[i];   //gets the total number of probes during the insertion
     }
 
-    free(dictionaryWords);  //deallocates memory used to store the dictionary words
     averageProbes = (double)totalProbe/(double)lineCount; //gets the average number of probes for all operations
     int * probeTable = malloc(maxProbe*sizeof(int)); //dynamically allocate to an array of probe counters
     for(i = 0; i < lineCount; i++)   probeTable[probeCounter[i]] += 1;  //fill the dynamically allocated table with the probe counter values
     printf("\nHash Table\n\taverage number of probes:\t\t%0.2f\n\tmax_run of probes:\t\t\t%d\n\ttotal PROBES (for %d items):\t\t%d\n\titem NOT hased (out of %d):\t\t0\n\n", averageProbes, maxProbe, lineCount, totalProbe, lineCount);
     printf("Probes|Count of keys\n-------------------\n");
     for(i = 1; i <= maxProbe; i++)   {   
-        if(probeTable[i] == 0)  continue;
-        else    printf("%6d|%6d\n----------------------\n",i, probeTable[i]);
+        printf("%6d|%6d\n----------------------\n",i, probeTable[i]);
     }
     //print the format shown on run1, except table is dynamically allocated
     
@@ -229,9 +226,11 @@ int main(void)  {
     }
     averageProbes = (double)totalProbe/(double)(i - lineCount - 1); //calculates average number of probes for the user inputs
     printf("\nAverage probes per operation:\t%0.2f\n",averageProbes);
+    
+    free(dictionaryWords);
     free(probeTable);
     free(hashTable);
-    free(probeCounter);
+    free(probeCounter);   //deallocates memory 
     return 0; 
 }
 
