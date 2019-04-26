@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#define minimum(X, Y)   (( X < Y )? X : Y)
 
 void printArray(int * currentArray, int currentSize)   {
     int i;
@@ -8,16 +9,24 @@ void printArray(int * currentArray, int currentSize)   {
 }
 
 
+void merge(int * arrayInt, int leftIndex, int midIndex, int rightIndex) {
+    int i, j, k, sizeOne = (midIndex - leftIndex + 1), sizeTwo = (rightIndex - midIndex);
+    int arrayLeft[sizeOne], arrayRight[sizeTwo];
+    for(i = 0; i < sizeOne; ++i)
+
+    return;
+}
+
 
 void mergeSort(int * arrayInt, int arraySize)   {
     int i;
-    int currnetSize, leftIndex;
+    int currentSize, leftIndex;
     printArray(arrayInt, arraySize);
-    //for(i = 0; i < arraySize; i++)    arrayInt[i] = -1;
-    for(currentSize = 1; currentSize < arraySize - 1; currentSize *= 2)  {
-        for(leftIndex = 0; leftIndex < arraySize - 1; leftIndex += currentSize) {
-                int mid = ( leftIndex + currentSize ) / 2;
-                int right = ( ( currentSize - 1 ) - leftIndex );
+    for(currentSize = 1; currentSize <= arraySize - 1; currentSize = currentSize*2)  {
+        for(leftIndex = 0; leftIndex < arraySize - 1; leftIndex = currentSize*2) {
+                int midIndex = leftIndex + currentSize - 1;
+                int rightIndex = minimum( leftIndex + 2*currentSize -1 , arraySize - 1 );
+                merge(arrayInt, leftIndex, midIndex, rightIndex );
 
         }
     }  
@@ -29,14 +38,16 @@ int main(void)  {
     int arraySize; 
     do
     {
+        
         int i;
         scanf("%d",&arraySize);
         int * arrayInt = malloc(arraySize*sizeof(int) * arraySize);
         for(i = 0; i < arraySize; i++)  scanf("%d",&arrayInt[i]);
         printf("\n");
         mergeSort(arrayInt, arraySize);
+        free(arrayInt); 
+
     } while (arraySize != -1);
-    free(arrayInt);
     return 0;    
 }
 
